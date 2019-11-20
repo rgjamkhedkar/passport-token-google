@@ -1,9 +1,18 @@
 /**
  * Module dependencies.
  */
-const util = require('util')
-const OAuth2Strategy = require('passport-oauth').OAuth2Strategy
-const InternalOAuthError = require('passport-oauth').InternalOAuthError
+import util from "util";
+import * as passport from "passport";
+import PassportOauth, { StrategyOptionsWithRequest } from "passport-oauth2";
+
+const OAuth2Strategy = PassportOauth.Strategy;
+
+export interface Profile extends passport.Profile {
+  profileUrl: string;
+
+  _raw: string;
+  _json: any;
+}
 
 /**
  * `Strategy` constructor.
@@ -39,13 +48,19 @@ const InternalOAuthError = require('passport-oauth').InternalOAuthError
  * @param {Function} verify
  * @api public
  */
-function GoogleTokenStrategy(options, verify) {
+function GoogleTokenStrategy(
+  this: any,
+  options: StrategyOptionsWithRequest,
+  verify: any
+) {
   options = options || {};
-  options.authorizationURL = options.authorizationURL || 'https://accounts.google.com/o/oauth2/auth';
-  options.tokenURL = options.tokenURL || 'https://accounts.google.com/o/oauth2/token';
+  options.authorizationURL =
+    options.authorizationURL || "https://accounts.google.com/o/oauth2/auth";
+  options.tokenURL =
+    options.tokenURL || "https://accounts.google.com/o/oauth2/token";
 
   OAuth2Strategy.call(this, options, verify);
-  this.name = 'google-token';
+  this.name = "google-token";
 }
 
 /**
@@ -53,14 +68,13 @@ function GoogleTokenStrategy(options, verify) {
  */
 util.inherits(GoogleTokenStrategy, OAuth2Strategy);
 
-
 /**
  * Authenticate request by delegating to a service provider using OAuth 2.0.
  *
  * @param {Object} req
  * @api protected
  */
-GoogleTokenStrategy.prototype.authenticate = function(req, options) {
+GoogleTokenStrategy.prototype.authenticate = function(req: any, options: any) {
   options = options || {};
   var self = this;
 
@@ -70,16 +84,29 @@ GoogleTokenStrategy.prototype.authenticate = function(req, options) {
     return this.fail();
   }
 
-  var accessToken = req.body ? req.body.access_token || req.query.access_token || req.headers.access_token : req.headers.access_token || req.query.access_token;
-  var refreshToken = req.body ? req.body.refresh_token || req.query.refresh_token || req.headers.refresh_token : req.headers.refresh_token || req.query.refresh_token;
+  var accessToken = req.body
+    ? req.body.access_token ||
+      req.query.access_token ||
+      req.headers.access_token
+    : req.headers.access_token || req.query.access_token;
+  var refreshToken = req.body
+    ? req.body.refresh_token ||
+      req.query.refresh_token ||
+      req.headers.refresh_token
+    : req.headers.refresh_token || req.query.refresh_token;
 
+  self._loadUserProfile(accessToken, function(err: any, profile: Profile) {
+    if (err) {
+      return self.fail(err);
+    }
 
-  self._loadUserProfile(accessToken, function(err, profile) {
-    if (err) { return self.fail(err); };
-
-    function verified(err, user, info) {
-      if (err) { return self.error(err); }
-      if (!user) { return self.fail(info); }
+    function verified(err: any, user: any, info: any) {
+      if (err) {
+        return self.error(err);
+      }
+      if (!user) {
+        return self.fail(info);
+      }
       self.success(user, info);
     }
 
@@ -89,7 +116,7 @@ GoogleTokenStrategy.prototype.authenticate = function(req, options) {
       self._verify(accessToken, refreshToken, profile, verified);
     }
   });
-}
+};
 
 /**
  * Retrieve user profile from Google.
@@ -105,31 +132,45 @@ GoogleTokenStrategy.prototype.authenticate = function(req, options) {
  * @param {Function} done
  * @api protected
  */
-GoogleTokenStrategy.prototype.userProfile = function(accessToken, done) {
-  var profileUrl = 'https://www.googleapis.com/oauth2/v3/tokeninfo?id_token='+accessToken;
-  this._oauth2.get(profileUrl, null, function (err, body, res) {
-    if (err) { return done(new InternalOAuthError('failed to fetch user profile', err)); }
+GoogleTokenStrategy.prototype.userProfile = function(
+  accessToken: string,
+  done: (err: any, profile?: Profile) => void
+) {
+  var profileUrl =
+    "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + accessToken;
+  this._oauth2.get(profileUrl, null, function(err: any, body: any, res: any) {
+    if (err) {
+      return done(
+        new PassportOauth.InternalOAuthError(
+          "failed to fetch user profile",
+          err
+        )
+      );
+    }
 
     try {
       var json = JSON.parse(body);
 
-      var profile = { provider: 'google' };
-      profile.id = json.id || json.sub;
-      profile.displayName = json.name;
-      profile.name = { familyName: json.family_name,
-                       givenName: json.given_name };
-      profile.emails = [{ value: json.email }];
-
-      profile._raw = body;
-      profile._json = json;
+      var profile: Profile = {
+        profileUrl: profileUrl,
+        provider: "google",
+        id: json.id || json.sub,
+        displayName: json.name,
+        name: {
+          familyName: json.family_name,
+          givenName: json.given_name
+        },
+        emails: [{ value: json.email }],
+        _raw: body,
+        _json: json
+      };
 
       done(null, profile);
-    } catch(e) {
+    } catch (e) {
       done(e);
     }
   });
-}
-
+};
 
 /**
  * Load user profile, contingent upon options.
@@ -138,7 +179,10 @@ GoogleTokenStrategy.prototype.userProfile = function(accessToken, done) {
  * @param {Function} done
  * @api private
  */
-GoogleTokenStrategy.prototype._loadUserProfile = function(accessToken, done) {
+GoogleTokenStrategy.prototype._loadUserProfile = function(
+  accessToken: string,
+  done: (err: any) => void
+) {
   var self = this;
 
   function loadIt() {
@@ -148,22 +192,33 @@ GoogleTokenStrategy.prototype._loadUserProfile = function(accessToken, done) {
     return done(null);
   }
 
-  if (typeof this._skipUserProfile == 'function' && this._skipUserProfile.length > 1) {
+  if (
+    typeof this._skipUserProfile == "function" &&
+    this._skipUserProfile.length > 1
+  ) {
     // async
-    this._skipUserProfile(accessToken, function(err, skip) {
-      if (err) { return done(err); }
-      if (!skip) { return loadIt(); }
+    this._skipUserProfile(accessToken, function(err: any, skip: any) {
+      if (err) {
+        return done(err);
+      }
+      if (!skip) {
+        return loadIt();
+      }
       return skipIt();
     });
   } else {
-    var skip = (typeof this._skipUserProfile == 'function') ? this._skipUserProfile() : this._skipUserProfile;
-    if (!skip) { return loadIt(); }
+    var skip =
+      typeof this._skipUserProfile == "function"
+        ? this._skipUserProfile()
+        : this._skipUserProfile;
+    if (!skip) {
+      return loadIt();
+    }
     return skipIt();
   }
-}
-
+};
 
 /**
  * Expose `GoogleTokenStrategy`.
  */
-module.exports = GoogleTokenStrategy;
+export default GoogleTokenStrategy;

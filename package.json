@@ -1,32 +1,25 @@
 {
-  "name": "passport-token-google",
-  "version": "0.1.2",
-  "description": "Google token authentication strategy for Passport.",
   "author": {
-    "name": "Davide Polano",
-    "email": "info@mdslab.org"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/davidep87/passport-token-google.git"
+    "email": "rgjamkhedkar@gmail.com",
+    "name": "Rohan Jamkhedkar"
   },
   "bugs": {
-    "url": "http://github.com/davidep87/passport-token-google/issues"
+    "url": "https://github.com/rgjamkhedkar/passport-token-google/issues"
   },
-  "main": "./lib",
   "dependencies": {
-    "pkginfo": "0.2.x",
-    "passport-oauth": "^1.0.0"
+    "@types/passport": "^1.0.2",
+    "passport-oauth2": "^1.5.0",
+    "pkginfo": "0.4.x"
+  },
+  "description": "Google token authentication strategy for Passport.",
+  "devDependencies": {
+    "@types/node": "^12.12.11",
+    "@types/passport-oauth2": "^1.4.8",
+    "typescript": "^3.7.2"
   },
   "engines": {
-    "node": ">= 0.4.0"
+    "node": ">= 10"
   },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "http://www.opensource.org/licenses/MIT"
-    }
-  ],
   "keywords": [
     "passport",
     "google",
@@ -34,5 +27,22 @@
     "authn",
     "authentication",
     "identity"
-  ]
+  ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/MIT"
+    }
+  ],
+  "main": "./lib",
+  "name": "passport-token-google-ts",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/rgjamkhedkar/passport-token-google"
+  },
+  "version": "1.0.0",
+  "scripts": {
+    "tsc": "tsc",
+    "build": "tsc"
+  }
 }
